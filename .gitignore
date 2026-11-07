@@ -1,0 +1,20 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+
+# Environment & local secrets
+.env*
+!.env.example
+*.pem
+*.key
+*.cert
+*service-account*.json
+*.local
+
+# Temporary test scripts & scratch files
+test_*.ts
+*.tmp
+tmp/

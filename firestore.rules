@@ -1,0 +1,31 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Validate that document IDs are alphanumeric safe identifiers
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    
+    // Strict ownership verification: only the authenticated user matching the document path can access
+    function isOwner(userId) { 
+      return request.auth != null && request.auth.uid == userId; 
+    }
+    
+    // User root document isolation
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && isValidId(userId);
+
+      // Recursive rule for any user subcollections (roadmaps, progress, analytics, notes)
+      match /{subcollection=**} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Default deny: All other paths are strictly forbidden
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,180 @@
+@import "tailwindcss";
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Fraunces", Georgia, Cambria, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-ivory: #F4F0E6;
+  --color-forest: #263A32;
+  --color-terracotta: #C66E4E;
+  --color-gold: #D6AE57;
+  --color-sage: #829A91;
+  --color-slate: #343D50;
+}
+
+:root {
+  /* Editorial Palette: Light Mode */
+  --canvas: #F4F0E6;
+  --canvas-subtle: #ECE5D7;
+  --surface: #FFFFFF;
+  --surface-warm: #FAF8F5;
+  --surface-muted: #EFE9DE;
+  --border: #DFD7C7;
+  --border-subtle: #EBE5DB;
+  
+  --text-primary: #263A32; /* Forest Ink */
+  --text-secondary: #343D50; /* Slate */
+  --text-muted: #64748B;
+  
+  --primary: #C66E4E; /* Terracotta */
+  --primary-hover: #B35D3E;
+  --primary-foreground: #FFFFFF;
+  
+  --forest-dark: #1B2923;
+  --forest-base: #263A32;
+  --forest-light: #344C42;
+  
+  --terracotta: #C66E4E;
+  --terracotta-soft: #FBF0EB;
+  --gold: #D6AE57;
+  --gold-soft: #FBF6EB;
+  --sage: #829A91;
+  --sage-soft: #EEF3F1;
+  --slate: #343D50;
+}
+
+.dark {
+  /* Editorial Palette: Dark Mode */
+  --canvas: #151D19;
+  --canvas-subtle: #1C2722;
+  --surface: #202D27;
+  --surface-warm: #25352E;
+  --surface-muted: #2A3C34;
+  --border: #2E4239;
+  --border-subtle: #273830;
+  
+  --text-primary: #F4F0E6; /* Warm Ivory */
+  --text-secondary: #CBD5CE;
+  --text-muted: #8E9F97;
+  
+  --primary: #D47B5B; /* Luminous Terracotta */
+  --primary-hover: #E28C6E;
+  --primary-foreground: #FFFFFF;
+  
+  --forest-dark: #0F1613;
+  --forest-base: #1C2822;
+  --forest-light: #2D3E36;
+  
+  --terracotta: #D47B5B;
+  --terracotta-soft: #2E231F;
+  --gold: #DEB866;
+  --gold-soft: #2E291F;
+  --sage: #93AAA1;
+  --sage-soft: #202E28;
+  --slate: #8899AF;
+}
+
+body {
+  background-color: var(--canvas);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  transition: background-color 0.25s ease, color 0.25s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Editorial Typography */
+.font-serif-editorial {
+  font-family: var(--font-serif);
+  letter-spacing: -0.02em;
+}
+
+/* Custom Scrollbars */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Reusable Button Classes */
+.btn-editorial-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: #C66E4E;
+  color: #FFFFFF;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  padding: 0.625rem 1.25rem;
+  transition: all 0.18s ease-in-out;
+  box-shadow: 0 1px 3px rgba(38, 58, 50, 0.08);
+  border: 1px solid rgba(198, 110, 78, 0.2);
+}
+.btn-editorial-primary:hover {
+  background-color: #B35D3E;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(198, 110, 78, 0.22);
+}
+.btn-editorial-primary:active {
+  transform: translateY(0);
+}
+
+.btn-editorial-forest {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: #263A32;
+  color: #F4F0E6;
+  font-weight: 600;
+  border-radius: 0.75rem;
+  padding: 0.625rem 1.25rem;
+  transition: all 0.18s ease-in-out;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.btn-editorial-forest:hover {
+  background-color: #1A2822;
+  transform: translateY(-1px);
+}
+
+.btn-editorial-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: var(--surface);
+  color: var(--text-primary);
+  font-weight: 600;
+  border-radius: 0.75rem;
+  padding: 0.625rem 1.25rem;
+  border: 1px solid var(--border);
+  transition: all 0.18s ease-in-out;
+}
+.btn-editorial-secondary:hover {
+  background-color: var(--surface-warm);
+  border-color: var(--text-muted);
+}
+
+.card-editorial {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  box-shadow: 0 1px 4px rgba(38, 58, 50, 0.04);
+}
+.card-editorial:hover {
+  border-color: #829A91;
+  box-shadow: 0 6px 18px rgba(38, 58, 50, 0.06);
+}
