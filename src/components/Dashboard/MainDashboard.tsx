@@ -1,16 +1,16 @@
 import React from 'react';
-import { 
-  Sparkles, 
-  Target, 
-  TrendingUp, 
-  Calendar, 
-  CheckCircle2, 
-  Clock, 
-  Flame, 
-  ArrowRight, 
-  Bot, 
-  Award, 
-  Layers, 
+import {
+  Sparkles,
+  Target,
+  TrendingUp,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  Flame,
+  ArrowRight,
+  Bot,
+  Award,
+  Layers,
   AlertCircle,
   Briefcase,
   BookOpen,
@@ -41,7 +41,7 @@ export function MainDashboard({
   dailyInsight
 }: MainDashboardProps) {
   const completedCount = progress?.completedSteps.length || 0;
-  
+
   // Calculate total steps across phases
   const totalSteps = roadmap?.micro_steps_roadmap.reduce(
     (acc, phase) => acc + phase.daily_breakdown.length, 0
@@ -60,7 +60,7 @@ export function MainDashboard({
 
   return (
     <div className="space-y-8 animate-fadeIn">
-      
+
       {/* 1. Personalized Greeting Hero Banner */}
       <div className="p-6 sm:p-8 rounded-3xl bg-[var(--surface)] border border-[var(--border)] shadow-xs relative overflow-hidden">
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -72,25 +72,30 @@ export function MainDashboard({
               </span>
             </div>
             <h1 className="font-serif-editorial text-2xl sm:text-4xl font-bold text-[var(--text-primary)] tracking-tight">
-              Welcome back, {userProfile?.name?.split(' ')[0] || "Scholar"}.
+              {completedCount === 0
+                ? `Welcome to your learning journey, ${userProfile?.name?.split(' ')[0] || "Scholar"}.`
+                : `Welcome back, ${userProfile?.name?.split(' ')[0] || "Scholar"}.`}
             </h1>
             <p className="text-sm sm:text-base text-[var(--text-secondary)] leading-relaxed">
-              Your personalized curriculum is currently focused on mastering <strong className="text-[var(--text-primary)]">{targetCareer}</strong>.
-              {' '}You have completed <strong>{completedCount}</strong> of <strong>{totalSteps}</strong> actionable milestones.
+              {completedCount === 0 ? (
+                <>Your personalized curriculum is calibrated for <strong className="text-[var(--text-primary)]">{targetCareer}</strong>. Complete your first milestone below to begin building your consistency streak.</>
+              ) : (
+                <>Your personalized curriculum is currently focused on mastering <strong className="text-[var(--text-primary)]">{targetCareer}</strong>. You have completed <strong>{completedCount}</strong> of <strong>{totalSteps}</strong> actionable milestones.</>
+              )}
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <Button 
-              variant="primary" 
+            <Button
+              variant="primary"
               size="md"
               onClick={() => onTabChange('missions')}
               className="text-xs sm:text-sm"
             >
               Start Today's Mission <ArrowRight className="w-4 h-4 ml-1" />
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="md"
               onClick={() => onTabChange('study-buddy')}
               className="text-xs sm:text-sm"
@@ -106,7 +111,7 @@ export function MainDashboard({
 
       {/* 2. Key Metrics Strip (Asymmetrical & Editorial) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        
+
         {/* Metric 1: Overall Progress */}
         <div className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] space-y-2">
           <div className="flex items-center justify-between">
@@ -118,9 +123,9 @@ export function MainDashboard({
             <span className="text-xs text-[var(--text-muted)]">of roadmap</span>
           </div>
           <div className="w-full bg-[var(--surface-muted)] h-2 rounded-full overflow-hidden">
-            <div 
-              className="bg-[#C66E4E] h-full rounded-full transition-all duration-500" 
-              style={{ width: `${progressPercent}%` }} 
+            <div
+              className="bg-[#C66E4E] h-full rounded-full transition-all duration-500"
+              style={{ width: `${progressPercent}%` }}
             />
           </div>
         </div>
@@ -165,12 +170,12 @@ export function MainDashboard({
           </div>
           <div className="flex items-baseline gap-2">
             <span className="font-serif-editorial text-3xl font-bold text-[var(--text-primary)]">
-              {progress?.hoursPerDay || userProfile?.hoursPerDay || 2}h
+              {progress?.hoursPerDay || userProfile?.hoursPerDay || 1.5}h
             </span>
             <span className="text-xs text-[var(--text-muted)]">per day target</span>
           </div>
           <p className="text-[11px] text-[var(--text-muted)]">
-            ~14 hours dedicated weekly
+            ~{Math.round((progress?.hoursPerDay || userProfile?.hoursPerDay || 1.5) * 7)} hours dedicated weekly
           </p>
         </div>
 
@@ -195,7 +200,7 @@ export function MainDashboard({
 
       {/* 4. Main Two-Column Workflow Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Left Column: Active Roadmap Milestones (2 cols) */}
         <div className="lg:col-span-2 space-y-6">
           <div className="flex items-center justify-between pb-2 border-b border-[var(--border)]">
@@ -207,9 +212,9 @@ export function MainDashboard({
                 Phase 1: {activePhase?.phase_name || "Foundations & Problem Breakdown"}
               </p>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => onTabChange('roadmap')}
               className="text-xs"
             >
@@ -223,7 +228,7 @@ export function MainDashboard({
                 const stepId = `0-${sIdx}`;
                 const isCompleted = progress?.completedSteps.includes(stepId) || false;
                 return (
-                  <div 
+                  <div
                     key={sIdx}
                     className="p-5 rounded-2xl bg-[var(--surface)] border border-[var(--border)] hover:border-[#829A91] transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                   >
@@ -250,8 +255,8 @@ export function MainDashboard({
                         </span>
                       )}
                       {onAskStudyBuddy && (
-                        <Button 
-                          variant="ghost" 
+                        <Button
+                          variant="ghost"
                           size="sm"
                           onClick={() => onAskStudyBuddy(step.title, step.description)}
                           className="text-xs text-[#829A91]"
@@ -266,7 +271,7 @@ export function MainDashboard({
             ) : (
               <div className="p-8 text-center rounded-2xl bg-[var(--surface)] border border-dashed border-[var(--border)] space-y-3">
                 <p className="text-sm text-[var(--text-muted)]">No roadmap loaded yet.</p>
-                <Button variant="primary" size="sm" onClick={() => onTabChange('assessment')}>
+                <Button variant="primary" size="sm" onClick={() => onTabChange('onboarding')}>
                   Generate Custom Roadmap
                 </Button>
               </div>
@@ -308,7 +313,7 @@ export function MainDashboard({
 
         {/* Right Column: Industry Outlook & Quick Actions (1 col) */}
         <div className="space-y-6">
-          
+
           {/* Market Intelligence Card */}
           {roadmap?.market_analysis ? (
             <Card>

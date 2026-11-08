@@ -2,6 +2,7 @@ export type NavigationTab =
   | 'dashboard' 
   | 'roadmap' 
   | 'assessment' 
+  | 'onboarding'
   | 'profile' 
   | 'skill-gap' 
   | 'missions'
@@ -11,6 +12,19 @@ export type NavigationTab =
   | 'analytics' 
   | 'resources' 
   | 'settings';
+
+export interface OnboardingAnswers {
+  fieldOfInterest: string;
+  primaryGoal: string;
+  currentLevel: 'Absolute Beginner' | 'Basic Knowledge' | 'Intermediate' | 'Advanced';
+  existingSkills: string[];
+  targetRole: string;
+  dailyCommitment: string;
+  hoursPerDay: number;
+  learningStyle: string;
+  targetTimeline: string;
+  targetTimelineMonths: number;
+}
 
 export interface UserProfile {
   id?: string;
@@ -32,6 +46,8 @@ export interface UserProfile {
   bio?: string;
   githubUrl?: string;
   linkedinUrl?: string;
+  onboardingCompleted?: boolean;
+  onboardingAnswers?: OnboardingAnswers;
 }
 
 export interface SkillGapItem {

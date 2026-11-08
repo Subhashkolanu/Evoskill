@@ -11,3 +11,13 @@ export function isInAppBrowser(): boolean {
          (ua.includes('wv') && ua.includes('Android')) || 
          (/iPhone|iPod|iPad/i.test(ua) && !/Safari/i.test(ua));
 }
+
+/**
+ * Race a promise against a timeout, returning fallback if time expires.
+ */
+export function withTimeout<T>(promise: Promise<T>, timeoutMs: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), timeoutMs))
+  ]);
+}

@@ -370,7 +370,27 @@ app.post("/api/generate-roadmap", roadmapRateLimiter, requestTimeout(60000), req
     const { chatHistory } = req.body;
     
     if (!process.env.GEMINI_API_KEY) {
-      return res.json(FALLBACK_ROADMAP);
+      const historyStr = JSON.stringify(chatHistory).toLowerCase();
+      let detectedPath = "Full-Stack Software Engineer";
+      if (historyStr.includes("machine learning") || historyStr.includes("ai")) {
+        detectedPath = "Applied Machine Learning Engineer";
+      } else if (historyStr.includes("cyber") || historyStr.includes("security")) {
+        detectedPath = "Information Security Analyst";
+      } else if (historyStr.includes("devops") || historyStr.includes("cloud")) {
+        detectedPath = "Cloud DevOps & Platform Engineer";
+      } else if (historyStr.includes("data analytics")) {
+        detectedPath = "Data Analytics & BI Engineer";
+      } else if (historyStr.includes("competitive") || historyStr.includes("algorithm")) {
+        detectedPath = "Algorithms & Systems Specialist";
+      }
+      return res.json({
+        ...FALLBACK_ROADMAP,
+        user_profile_analysis: {
+          ...FALLBACK_ROADMAP.user_profile_analysis,
+          best_career_path: detectedPath,
+          why_this_path_suits_them: `Personalized trajectory tailored for ${detectedPath} based on your primary milestone.`
+        }
+      });
     }
 
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });

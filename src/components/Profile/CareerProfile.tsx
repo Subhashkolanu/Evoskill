@@ -21,12 +21,14 @@ interface CareerProfileProps {
   profile: UserProfile | null;
   onSaveProfile: (updatedProfile: UserProfile) => Promise<void>;
   onGenerateRoadmapFromProfile?: () => void;
+  onRestartOnboarding?: () => void;
 }
 
 export function CareerProfile({
   profile,
   onSaveProfile,
-  onGenerateRoadmapFromProfile
+  onGenerateRoadmapFromProfile,
+  onRestartOnboarding
 }: CareerProfileProps) {
   const [formData, setFormData] = useState<UserProfile>(() => {
     return profile || {
@@ -131,7 +133,17 @@ export function CareerProfile({
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {onRestartOnboarding && (
+            <Button 
+              variant="outline" 
+              size="md" 
+              onClick={onRestartOnboarding}
+              className="text-xs"
+            >
+              Re-calculate Trajectory
+            </Button>
+          )}
           <Button 
             variant="primary" 
             size="md" 

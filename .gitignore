@@ -16,5 +16,8 @@ coverage/
 
 # Temporary test scripts & scratch files
 test_*.ts
+test_*.cjs
+test_*.js
+screenshots_test/
 *.tmp
 tmp/

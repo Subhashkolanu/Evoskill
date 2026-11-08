@@ -1,6 +1,7 @@
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import { RoadmapData, UserProfile } from '../types';
+import { withTimeout } from './utils';
 
 enum OperationType {
   CREATE = 'create',
@@ -45,9 +46,10 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
     operationType,
     path
   };
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  console.warn('Firestore Operation Notice: ', JSON.stringify(errInfo));
 }
+
+const FIRESTORE_TIMEOUT_MS = 6000;
 
 // User-Specific Roadmap Persistence
 export const saveUserRoadmap = async (userId: string, roadmap: RoadmapData) => {
@@ -56,10 +58,14 @@ export const saveUserRoadmap = async (userId: string, roadmap: RoadmapData) => {
   }
   const path = `users/${userId}`;
   try {
-    await setDoc(doc(db, 'users', userId), {
-      roadmap,
-      updatedAt: new Date().toISOString()
-    }, { merge: true });
+    await withTimeout(
+      setDoc(doc(db, 'users', userId), {
+        roadmap,
+        updatedAt: new Date().toISOString()
+      }, { merge: true }),
+      FIRESTORE_TIMEOUT_MS,
+      undefined
+    );
   } catch (error: any) {
     if (error?.code === 'unavailable' || error?.message?.includes('offline')) {
       console.warn("Firestore is offline, unable to save roadmap.");
@@ -75,9 +81,13 @@ export const getUserRoadmap = async (userId: string): Promise<RoadmapData | null
   }
   const path = `users/${userId}`;
   try {
-    const userDoc = await getDoc(doc(db, 'users', userId));
-    if (userDoc.exists()) {
-      return userDoc.data().roadmap as RoadmapData;
+    const userDoc = await withTimeout(
+      getDoc(doc(db, 'users', userId)),
+      FIRESTORE_TIMEOUT_MS,
+      null
+    );
+    if (userDoc && userDoc.exists()) {
+      return (userDoc.data().roadmap as RoadmapData) || null;
     }
   } catch (error: any) {
     if (error?.code === 'unavailable' || error?.message?.includes('offline')) {
@@ -97,7 +107,8 @@ export const saveUserProgress = async (
     stepNotes: Record<string, string>; 
     hoursPerDay: number; 
     lastActivityDate?: string | null; 
-    currentStreak?: number 
+    currentStreak?: number;
+    totalFocusSeconds?: number;
   }
 ) => {
   if (auth.currentUser && auth.currentUser.uid !== userId) {
@@ -105,10 +116,14 @@ export const saveUserProgress = async (
   }
   const path = `users/${userId}`;
   try {
-    await setDoc(doc(db, 'users', userId), {
-      progress,
-      updatedAt: new Date().toISOString()
-    }, { merge: true });
+    await withTimeout(
+      setDoc(doc(db, 'users', userId), {
+        progress,
+        updatedAt: new Date().toISOString()
+      }, { merge: true }),
+      FIRESTORE_TIMEOUT_MS,
+      undefined
+    );
   } catch (error: any) {
     if (error?.code === 'unavailable' || error?.message?.includes('offline')) {
       console.warn("Firestore is offline, unable to save progress.");
@@ -125,21 +140,27 @@ export const getUserProgress = async (
   stepNotes: Record<string, string>; 
   hoursPerDay: number; 
   lastActivityDate?: string | null; 
-  currentStreak?: number 
+  currentStreak?: number;
+  totalFocusSeconds?: number;
 } | null> => {
   if (auth.currentUser && auth.currentUser.uid !== userId) {
     throw new Error("Security Violation: Cannot read another user's progress.");
   }
   const path = `users/${userId}`;
   try {
-    const userDoc = await getDoc(doc(db, 'users', userId));
-    if (userDoc.exists()) {
+    const userDoc = await withTimeout(
+      getDoc(doc(db, 'users', userId)),
+      FIRESTORE_TIMEOUT_MS,
+      null
+    );
+    if (userDoc && userDoc.exists()) {
       return userDoc.data().progress as { 
         completedSteps: string[]; 
         stepNotes: Record<string, string>; 
         hoursPerDay: number; 
         lastActivityDate?: string | null; 
-        currentStreak?: number 
+        currentStreak?: number;
+        totalFocusSeconds?: number;
       };
     }
   } catch (error: any) {
@@ -159,10 +180,14 @@ export const saveUserProfile = async (userId: string, profile: UserProfile) => {
   }
   const path = `users/${userId}`;
   try {
-    await setDoc(doc(db, 'users', userId), {
-      profile,
-      updatedAt: new Date().toISOString()
-    }, { merge: true });
+    await withTimeout(
+      setDoc(doc(db, 'users', userId), {
+        profile,
+        updatedAt: new Date().toISOString()
+      }, { merge: true }),
+      FIRESTORE_TIMEOUT_MS,
+      undefined
+    );
   } catch (error: any) {
     if (error?.code === 'unavailable' || error?.message?.includes('offline')) {
       console.warn("Firestore is offline, unable to save profile.");
@@ -178,8 +203,12 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
   }
   const path = `users/${userId}`;
   try {
-    const userDoc = await getDoc(doc(db, 'users', userId));
-    if (userDoc.exists() && userDoc.data().profile) {
+    const userDoc = await withTimeout(
+      getDoc(doc(db, 'users', userId)),
+      FIRESTORE_TIMEOUT_MS,
+      null
+    );
+    if (userDoc && userDoc.exists() && userDoc.data().profile) {
       return userDoc.data().profile as UserProfile;
     }
   } catch (error: any) {

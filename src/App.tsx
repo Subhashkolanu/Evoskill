@@ -1,28 +1,28 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { User } from 'firebase/auth';
-import { 
-  initAuth, 
-  googleSignIn, 
-  logout, 
+import {
+  initAuth,
+  googleSignIn,
+  logout,
   getAccessToken,
   requestWorkspaceConsent,
   authenticatedFetch
 } from './lib/firebase';
-import { 
-  saveUserRoadmap, 
-  getUserRoadmap, 
-  saveUserProgress, 
+import {
+  saveUserRoadmap,
+  getUserRoadmap,
+  saveUserProgress,
   getUserProgress,
   saveUserProfile,
   getUserProfile
 } from './lib/db';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { 
-  NavigationTab, 
-  UserProfile, 
-  RoadmapData, 
-  ChatMessage, 
-  UserProgressState 
+import {
+  NavigationTab,
+  UserProfile,
+  RoadmapData,
+  ChatMessage,
+  UserProgressState
 } from './types';
 import { exportToTasks, exportToCalendar, exportToDocs, exportToSheets } from './lib/workspace';
 
@@ -41,7 +41,9 @@ import { CareerProfile } from './components/Profile/CareerProfile';
 import { ProgressAnalytics } from './components/Analytics/ProgressAnalytics';
 import { ResourceHub } from './components/Resources/ResourceHub';
 import { SettingsView } from './components/Settings/SettingsView';
-import { Loader2, Compass } from 'lucide-react';
+import { PersonalizedOnboarding } from './components/Onboarding/PersonalizedOnboarding';
+import { Button } from './components/ui/Button';
+import { Loader2, Compass, RotateCcw, LogOut, Sparkles, AlertTriangle } from 'lucide-react';
 
 const SAMPLE_ROADMAP: RoadmapData = {
   user_profile_analysis: {
@@ -173,17 +175,32 @@ export default function App() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+  const [loadingTimeoutReached, setLoadingTimeoutReached] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(false);
+
+  // Safety timer for loading state to prevent infinite hang on "Authenticating session & loading workspace..."
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isLoadingAuth) {
+      timer = setTimeout(() => {
+        setLoadingTimeoutReached(true);
+      }, 7500);
+    } else {
+      setLoadingTimeoutReached(false);
+    }
+    return () => clearTimeout(timer);
+  }, [isLoadingAuth]);
 
   // Application Data State
   const [currentTab, setCurrentTab] = useState<NavigationTab>('dashboard');
   const [roadmap, setRoadmap] = useState<RoadmapData | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [progress, setProgress] = useState<UserProgressState>({
-    completedSteps: ['0-0'],
+    completedSteps: [],
     stepNotes: {},
-    hoursPerDay: 2.5,
-    lastActivityDate: new Date().toISOString().split('T')[0],
-    currentStreak: 3
+    hoursPerDay: 1.5,
+    lastActivityDate: null,
+    currentStreak: 0
   });
 
   // Active Task Context for Study Buddy
@@ -192,14 +209,15 @@ export default function App() {
   const [isExporting, setIsExporting] = useState(false);
   const [dailyInsight, setDailyInsight] = useState<string | null>(null);
 
-  // Demo Mode Activation
+  // Demo Mode Activation (Alex Mercer - Explicitly Flagged Demo Sandbox)
   const activateDemoSession = useCallback(() => {
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('evoskill_demo_mode', 'true');
     }
+    setIsDemoMode(true);
     setUser({
       uid: 'demo-user-123',
-      displayName: 'Alex Mercer (Demo)',
+      displayName: 'Alex Mercer (Demo Mode)',
       email: 'alex.demo@evoskill.ai',
     } as any);
     setUserProfile({
@@ -217,9 +235,17 @@ export default function App() {
         { name: "React", level: "Advanced" },
         { name: "Docker", level: "Intermediate" }
       ],
-      bio: "Demonstrating EvoSkill AI V2.0 capabilities in interactive demo mode."
+      bio: "Demonstrating EvoSkill AI V2.0 capabilities in interactive demo mode.",
+      onboardingCompleted: true
     });
     setRoadmap(SAMPLE_ROADMAP);
+    setProgress({
+      completedSteps: ['0-0'],
+      stepNotes: {},
+      hoursPerDay: 2.5,
+      lastActivityDate: new Date().toISOString().split('T')[0],
+      currentStreak: 3
+    });
     setNeedsAuth(false);
     setIsLoadingAuth(false);
   }, []);
@@ -231,51 +257,78 @@ export default function App() {
         setUser(currentUser);
         setNeedsAuth(false);
         setIsLoadingAuth(true);
+        setIsDemoMode(false);
 
-        // Populate base profile from user
-        setUserProfile({
+        // Derive authentic profile strictly from Firebase user (NO invented names, roles, or metrics!)
+        const baseProfile: UserProfile = {
           name: currentUser.displayName || "Scholar",
           email: currentUser.email || "",
-          education: "STEM / Computer Science",
-          yearsExperience: 1,
-          currentRole: "Software Developer",
-          targetRole: "Distributed Cloud Systems Engineer",
-          targetTimelineMonths: 6,
-          hoursPerDay: 2.5,
-          interests: ["Distributed Systems", "Database Internals", "Cloud Architecture"],
-          existingSkills: [
-            { name: "JavaScript/TypeScript", level: "Intermediate" },
-            { name: "React", level: "Intermediate" },
-            { name: "Git", level: "Intermediate" }
-          ]
-        });
+          avatarUrl: currentUser.photoURL || undefined,
+          education: "",
+          yearsExperience: 0,
+          currentRole: "",
+          targetRole: "",
+          targetTimelineMonths: 3,
+          hoursPerDay: 1.5,
+          interests: [],
+          existingSkills: [],
+          onboardingCompleted: false
+        };
 
         try {
-          const [existingRoadmap, existingProgress, existingProfile] = await Promise.all([
-            getUserRoadmap(currentUser.uid),
-            getUserProgress(currentUser.uid),
-            getUserProfile(currentUser.uid)
+          const [existingRoadmap, existingProgress, existingProfile] = await Promise.race([
+            Promise.all([
+              getUserRoadmap(currentUser.uid),
+              getUserProgress(currentUser.uid),
+              getUserProfile(currentUser.uid)
+            ]),
+            new Promise<[null, null, null]>((resolve) => setTimeout(() => resolve([null, null, null]), 6000))
           ]);
 
-          if (existingProfile) {
-            setUserProfile(existingProfile);
-          }
-
-          if (existingRoadmap) {
+          if (existingProfile && existingProfile.onboardingCompleted && existingRoadmap) {
+            // Returning user with verified completed onboarding: restore real data!
+            setUserProfile({
+              ...existingProfile,
+              name: currentUser.displayName || existingProfile.name,
+              email: currentUser.email || existingProfile.email,
+              avatarUrl: currentUser.photoURL || existingProfile.avatarUrl
+            });
             setRoadmap(existingRoadmap);
+            if (existingProgress) {
+              setProgress(existingProgress);
+            } else {
+              setProgress({
+                completedSteps: [],
+                stepNotes: {},
+                hoursPerDay: existingProfile.hoursPerDay || 1.5,
+                lastActivityDate: null,
+                currentStreak: 0,
+                totalFocusSeconds: 0
+              });
+            }
+            setCurrentTab('dashboard');
           } else {
-            // Default to high quality sample roadmap
-            setRoadmap(SAMPLE_ROADMAP);
-          }
-
-          if (existingProgress) {
-            setProgress(existingProgress);
+            // New user: route directly to Personalized Onboarding (NO fake data!)
+            setUserProfile(baseProfile);
+            setRoadmap(null);
+            setProgress({
+              completedSteps: [],
+              stepNotes: {},
+              hoursPerDay: 1.5,
+              lastActivityDate: null,
+              currentStreak: 0,
+              totalFocusSeconds: 0
+            });
+            setCurrentTab('onboarding');
           }
         } catch (error) {
-          console.error("Error loading user data from Firestore:", error);
-          setRoadmap(SAMPLE_ROADMAP);
+          console.warn("User workspace load encountered notice, routing to onboarding:", error);
+          setUserProfile(baseProfile);
+          setRoadmap(null);
+          setCurrentTab('onboarding');
+        } finally {
+          setIsLoadingAuth(false);
         }
-        setIsLoadingAuth(false);
       },
       () => {
         if (typeof window !== 'undefined' && sessionStorage.getItem('evoskill_demo_mode') === 'true') {
@@ -288,7 +341,7 @@ export default function App() {
       }
     );
     return () => unsubscribe();
-  }, []);
+  }, [activateDemoSession]);
 
   // Fetch Daily Coach Insight
   useEffect(() => {
@@ -365,6 +418,7 @@ export default function App() {
     if (typeof window !== 'undefined') {
       sessionStorage.removeItem('evoskill_demo_mode');
     }
+    setIsDemoMode(false);
     await logout();
     setUser(null);
     setNeedsAuth(true);
@@ -395,8 +449,8 @@ export default function App() {
       : [...progress.completedSteps, stepId];
 
     const today = new Date().toISOString().split('T')[0];
-    const newStreak = !progress.lastActivityDate || progress.lastActivityDate !== today 
-      ? (progress.currentStreak || 0) + 1 
+    const newStreak = !progress.lastActivityDate || progress.lastActivityDate !== today
+      ? (progress.currentStreak || 0) + 1
       : progress.currentStreak;
 
     const newProgress: UserProgressState = {
@@ -545,21 +599,87 @@ export default function App() {
     }
   };
 
-  // Reset roadmap handler
+  // Handle Onboarding Completion
+  const handleOnboardingComplete = (
+    newRoadmap: RoadmapData,
+    newProfile: UserProfile,
+    newProgress: UserProgressState
+  ) => {
+    setIsDemoMode(false);
+    setRoadmap(newRoadmap);
+    setUserProfile(newProfile);
+    setProgress(newProgress);
+    setCurrentTab('dashboard');
+  };
+
+  // Reset roadmap handler -> Returns to personalized onboarding
   const handleResetRoadmap = () => {
     setRoadmap(null);
     setProgress({
       completedSteps: [],
       stepNotes: {},
-      hoursPerDay: 2,
+      hoursPerDay: userProfile?.hoursPerDay || 1.5,
       lastActivityDate: null,
       currentStreak: 0
     });
-    setCurrentTab('assessment');
+    setCurrentTab('onboarding');
   };
 
-  // Initial Full Screen Loader (Warm Ivory Editorial)
+  // Initial Full Screen Loader (Warm Ivory Editorial) with Timeout Recovery
   if (isLoadingAuth) {
+    if (loadingTimeoutReached) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--canvas)] text-[var(--text-primary)] p-6 font-sans">
+          <div className="max-w-md w-full p-8 rounded-3xl bg-[var(--surface)] border border-[var(--border)] shadow-sm text-center space-y-6 animate-fadeIn">
+            <div className="w-14 h-14 rounded-2xl bg-[#263A32] text-[#F4F0E6] flex items-center justify-center mx-auto shadow-sm">
+              <Compass className="w-7 h-7 text-[#C66E4E]" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="font-serif-editorial text-2xl font-bold text-[var(--text-primary)]">
+                Workspace Connection Delayed
+              </h2>
+              <p className="text-xs text-[var(--text-muted)] leading-relaxed">
+                Connecting to your EvoSkill workspace is taking longer than usual. This can occur if network latency is high or cloud synchronization is queued.
+              </p>
+            </div>
+            <div className="space-y-2.5 pt-2">
+              <Button
+                variant="primary"
+                size="md"
+                onClick={() => {
+                  setLoadingTimeoutReached(false);
+                  setIsLoadingAuth(true);
+                  window.location.reload();
+                }}
+                className="w-full text-xs"
+              >
+                <RotateCcw className="w-3.5 h-3.5 mr-1.5" /> Retry Workspace Connection
+              </Button>
+              <Button
+                variant="outline"
+                size="md"
+                onClick={() => {
+                  setLoadingTimeoutReached(false);
+                  setIsLoadingAuth(false);
+                }}
+                className="w-full text-xs"
+              >
+                Continue to Session
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSignOut}
+                className="w-full text-xs text-[var(--text-muted)]"
+              >
+                <LogOut className="w-3.5 h-3.5 mr-1" /> Sign Out & Return Home
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--canvas)] text-[var(--text-primary)] p-6 font-sans">
         <div className="w-12 h-12 rounded-2xl bg-[#263A32] text-[#F4F0E6] flex items-center justify-center mb-4 shadow-sm animate-pulse">
@@ -574,7 +694,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       {needsAuth ? (
-        <LandingPage 
+        <LandingPage
           onLogin={handleLogin}
           isLoggingIn={isLoggingIn}
           authError={authError}
@@ -589,6 +709,37 @@ export default function App() {
           currentStreak={progress.currentStreak}
           onSignOut={handleSignOut}
         >
+          {/* Demo Sandbox Banner */}
+          {isDemoMode && (
+            <div className="mx-4 sm:mx-8 mt-4 p-3.5 rounded-2xl bg-[#D6AE57]/15 border border-[#D6AE57]/30 text-[var(--text-primary)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#D6AE57] animate-ping shrink-0" />
+                <span>
+                  <strong>Interactive Demo Active:</strong> You are exploring a sample Distributed Cloud Systems track for Alex Mercer.
+                </span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => setCurrentTab('onboarding')}
+                  className="text-xs py-1 px-3"
+                >
+                  <Sparkles className="w-3.5 h-3.5 mr-1" /> Design Your Real Plan
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {currentTab === 'onboarding' && (
+            <PersonalizedOnboarding
+              user={user}
+              initialProfile={userProfile}
+              onComplete={handleOnboardingComplete}
+              onCancel={roadmap ? () => setCurrentTab('dashboard') : undefined}
+            />
+          )}
+
           {currentTab === 'dashboard' && (
             <MainDashboard
               roadmap={roadmap}
@@ -673,6 +824,7 @@ export default function App() {
               profile={userProfile}
               onSaveProfile={handleSaveProfile}
               onGenerateRoadmapFromProfile={() => setCurrentTab('assessment')}
+              onRestartOnboarding={() => setCurrentTab('onboarding')}
             />
           )}
 
@@ -693,6 +845,7 @@ export default function App() {
               userProfile={userProfile}
               onSignOut={handleSignOut}
               onResetRoadmap={handleResetRoadmap}
+              onRestartOnboarding={() => setCurrentTab('onboarding')}
             />
           )}
         </AppShell>

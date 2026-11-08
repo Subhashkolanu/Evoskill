@@ -21,12 +21,14 @@ interface SettingsViewProps {
   userProfile: UserProfile | null;
   onSignOut: () => void;
   onResetRoadmap: () => void;
+  onRestartOnboarding?: () => void;
 }
 
 export function SettingsView({
   userProfile,
   onSignOut,
-  onResetRoadmap
+  onResetRoadmap,
+  onRestartOnboarding
 }: SettingsViewProps) {
   const [confirmReset, setConfirmReset] = useState(false);
 
@@ -125,11 +127,31 @@ export function SettingsView({
             </h3>
           </div>
 
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs pb-4 border-b border-red-100 dark:border-red-950/30">
+            <div>
+              <span className="font-bold text-[var(--text-primary)] block text-sm">Change Learning Path / Restart Onboarding</span>
+              <span className="text-[var(--text-muted)]">
+                Re-answer the 8 personalization questions to switch domain, timeline, or weekly commitment.
+              </span>
+            </div>
+
+            {onRestartOnboarding && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={onRestartOnboarding}
+                className="text-xs shrink-0"
+              >
+                Restart Onboarding
+              </Button>
+            )}
+          </div>
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
             <div>
               <span className="font-bold text-[var(--text-primary)] block text-sm">Reset Active Roadmap</span>
               <span className="text-[var(--text-muted)]">
-                Archive your current learning roadmap and return to career assessment.
+                Archive your current learning roadmap and clear milestone progress.
               </span>
             </div>
 
